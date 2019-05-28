@@ -15,7 +15,6 @@ int main()
 {
 	RenderWindow window(VideoMode(640, 480), "Run and Fire!");
 	View view; view.reset(FloatRect(0, 0, 640, 480));
-	//view.setCenter(200, 240);
 	
 	Clock clock;
 
@@ -23,7 +22,6 @@ int main()
 	hero_Image.createMaskFromColor(Color(0, 0, 0));
 	Entity hero(hero_Image, -13, 190, 42, 33, "Hero");
 	hero.get_sprite().setScale(0.5, 0.5);
-	//std::cout << hero.get_sprite().set
 
 	Image monster_Image; monster_Image.loadFromFile("images/Monster.png");
 	monster_Image.createMaskFromColor(Color(255, 255, 255));
