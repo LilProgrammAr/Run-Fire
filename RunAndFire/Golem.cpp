@@ -5,12 +5,12 @@ Golem::Golem(Image &image, float X, float Y, int W, int H, String Name) : Monste
 	sprite.setTextureRect(IntRect(130, 3, w, h));
 	dx = -dx;
 	is_right = 0;
-	damage = 100;
+	damage = GOLEM_DMG;
 }
 
 void Golem::set(Image &image, float X, float Y, int W, int H, String Name){
 	x = X; y = Y; w = W; h = H; name = Name;
-	speed = 0.05; health = 50; dx = -0.05; dy = 0; damage = 100;
+	speed = 0.05; health = 50; dx = -0.05; dy = 0; damage = GOLEM_DMG;
 	life = true; onGround = false;
 	texture.loadFromImage(image);
 	sprite.setTexture(texture);

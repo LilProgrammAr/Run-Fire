@@ -2,9 +2,10 @@
 #include "functions.h"
 using namespace sf;
 
-Entity::Entity(Image &image, float X, float Y, int W, int H, String Name) {
+Entity::Entity(Image &image, float X, float Y, int W, int H, String Name) : doubleJump(false) {
+	clock.restart();
 	x = X; y = Y; w = W; h = H; name = Name; bullets_quantity = 3;	
-	speed = 0; health = 100; dx = 0; dy = 0; static_speed = 0.2; static_jump = 0.6; static_g = 0.0015;
+	speed = 0; health = PLAYER_HP ; dx = 0; dy = 0; static_speed = 0.2; static_jump = 0.6; static_g = 0.0015;
 	life = true; onGround = false; space_pressed = false; sprite_right = true; with_mob = false;
 	is_right = true;
 	texture.loadFromImage(image);
@@ -51,8 +52,8 @@ void Entity::control() {
 		if (Keyboard::isKeyPressed(Keyboard::Right)) {//право
 			state = right; speed = static_speed; is_right = true;
 		}
-		if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
-			state = jump; dy = -static_jump; onGround = false;
+		if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround || doubleJump)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
+			state = jump; dy = -static_jump; onGround = false; doubleJump = false;
 		}
 		if (Keyboard::isKeyPressed(Keyboard::Down)) {
 			state = down;
@@ -73,8 +74,12 @@ void Entity::control() {
 	Restart();
 }
 
-void Entity::update(float time, Map & map, std::vector<Golem> & golems, Loot & loot) {
+void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> & golems, Loot & loot) {
 	Restart();
+	if (clock.getElapsedTime().asMilliseconds() > 1000 / PLAYER_GUN_SPEED && space_pressed) {
+		space_pressed = false;
+		clock.restart();
+	}
 	if (life) {
 		control();
 		switch (state)//различные действия в зависимости от состояния
@@ -118,7 +123,9 @@ void Entity::update(float time, Map & map, std::vector<Golem> & golems, Loot & l
 void Entity::check_collision(float dx, float dy, Map & map) {
 	try {
 		for (int i = y / TITLE_SIZE; i < (y + h) / TITLE_SIZE; i++) {
+			if (i < 0 || i >= map.get_h()) continue;
 			for (int j = x / TITLE_SIZE; j < (x + w) / TITLE_SIZE; j++) {
+				if (j < 0 || j >= map.get_w()) continue;
 				onGround = false;
 				if (map[i][j] == 'w')
 				{
@@ -153,11 +160,12 @@ void Entity::check_collision(float dx, float dy, Map & map) {
 				if (map[i][j] == 'd') {
 					map[i][j] = '0';
 					bullets_quantity += 2;
+					doubleJump = true;
 				}
 			}
 		}
 	}
-	catch (...) {
+	catch (std::exception) {
 		return;
 	}
 }
@@ -174,17 +182,17 @@ void Entity::check_collision(Loot & loot) {
 	}
 }
 
-void Entity::check_collision(std::vector<Golem> & golems) {
+void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
 	for (int i = 0; i < golems.size(); i++) {
-		float gx = golems[i].get_x(), gy = golems[i].get_y(), gh = golems[i].get_h(), gw = golems[i].get_w();
+		float gx = golems[i]->get_x(), gy = golems[i]->get_y(), gh = golems[i]->get_h(), gw = golems[i]->get_w();
 		if (square_in_square(x, y, w, h, gx, gy, gw, gh) ||
 			square_in_square(gx, gy, gw, gh, x, y, w, h)) {
 
-			if (!with_mob) health -= golems[i].get_damage();
-			golems[i].change_direction();
+			if (!with_mob) health -= golems[i]->get_damage();
+			golems[i]->change_direction();
 			with_mob = true;
 
-			if (golems[i].get_right()) {
+			if (golems[i]->get_right()) {
 				dx = -static_speed * 2;
 				dy = -static_jump / 2;
 			}
@@ -205,7 +213,7 @@ void Entity::fire() {
 	bul.push_back(temp);
 }
 
-void Entity::draw_bullet(float time, Map & map, RenderWindow & window, std::vector<Golem> & golems) {
+void Entity::draw_bullet(float time, Map & map, RenderWindow & window, std::vector<std::unique_ptr<Golem>> & golems) {
 	for (int i = 0; i < bul.size(); i++) {
 		window.draw(bul[i].get_sprite());
 		int temp = bul[i].update(time, map, golems);
