@@ -27,8 +27,8 @@ int main()
 	monster_Image.createMaskFromColor(Color(255, 255, 255));
 
 	std::vector<std::unique_ptr<Golem>> golems;
-	golems.push_back(std::make_unique<Golem>(monster_Image, 64, 170, 28, 34, "Golem1"));
-	golems.push_back(std::make_unique<Golem>(monster_Image, 150, 332, 28, 34, "Golem2"));
+	golems.push_back(std::make_unique<Golem>(monster_Image, 64.f, 170.f, 28, 34, "Golem1"));
+	golems.push_back(std::make_unique<Golem>(monster_Image, 150.f, 332.f, 28, 34, "Golem2"));
 
 
 	Image mapImage; mapImage.loadFromFile("images/map.png");
@@ -76,7 +76,7 @@ int main()
 			if (!golems[i]->get_life()) {
 				golems.erase(golems.begin() + i); i--;
 				if (golems.empty() && !bossSpawned) {
-					golems.push_back(std::make_unique<BossGolem>(monster_Image, 150, 332, 28, 34, "Boss"));
+					golems.push_back(std::make_unique<BossGolem>(monster_Image, 150.f, 332.f, 28, 34, "Boss"));
 					bossSpawned = true;
 				}
 			}
