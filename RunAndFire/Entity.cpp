@@ -76,10 +76,6 @@ void Entity::control() {
 
 void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> & golems, Loot & loot) {
 	Restart();
-	if (clock.getElapsedTime().asMilliseconds() > 1000 / PLAYER_GUN_SPEED && space_pressed) {
-		space_pressed = false;
-		clock.restart();
-	}
 	if (life) {
 		control();
 		switch (state)//различные действия в зависимости от состояния
@@ -182,19 +178,19 @@ void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
 	for (size_t i = 0; i < golems.size(); i++) {
 		float gx = golems[i]->get_x(), gy = golems[i]->get_y(), gh = static_cast<float>(golems[i]->get_h()), gw = static_cast<float>(golems[i]->get_w());
 		if (square_in_square(x, y, static_cast<float>(w), static_cast<float>(h), gx, gy, gw, gh) ||
-			square_in_square(gx, gy, gw, gh, x, y, w, h)) {
+			square_in_square(gx, gy, gw, gh, x, y, static_cast<float>(w), static_cast<float>(h))) {
 
 			if (!with_mob) health -= golems[i]->get_damage();
 			if (golems[i]->get_right() && !this->is_right || !golems[i]->get_right() && this->is_right) golems[i]->change_direction();
 			with_mob = true;
 
 			if (golems[i]->get_right()) {
-				dx = -static_speed * 1.5;
-				dy = -static_jump / 4;
+				dx = -static_speed * 1.5f;
+				dy = -static_jump / 4.f;
 			}
 			else {
-				dx = static_speed * 1.5;
-				dy = -static_jump / 4;
+				dx = static_speed * 1.5f;
+				dy = -static_jump / 4.f;
 			}
 
 		}

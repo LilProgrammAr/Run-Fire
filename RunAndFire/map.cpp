@@ -32,7 +32,7 @@ void Map::draw(RenderTarget& window, RenderStates state) const {
 			case '0': temp_strite.setTextureRect(IntRect(192, 0, TITLE_SIZE, TITLE_SIZE)); break;
 			case 'd': temp_strite.setTextureRect(IntRect(161, 0, TITLE_SIZE, TITLE_SIZE)); break;
 			}
-			temp_strite.setPosition(j * TITLE_SIZE, i * TITLE_SIZE);//именно такой порядок, не веришь?
+			temp_strite.setPosition(static_cast<float>(j * TITLE_SIZE), static_cast<float>(i * TITLE_SIZE));//именно такой порядок, не веришь?
 			window.draw(temp_strite);
 		}
 	}

@@ -46,7 +46,7 @@ int main()
 	while (window.isOpen())
 	{
 
-		float time = clock.getElapsedTime().asMicroseconds();
+		auto time = static_cast<float>(clock.getElapsedTime().asMicroseconds());
 
 		clock.restart();
 		time = time / 800;
@@ -59,7 +59,7 @@ int main()
 		}
 
 		
-		for (int i = 0; i < golems.size(); i++) {
+		for (size_t i = 0; i < golems.size(); i++) {
 			golems[i]->update(time, map);
 		}
 		hero.update(time, map, golems, loot);
@@ -72,7 +72,7 @@ int main()
 		window.draw(loot);
 		window.draw(hero.get_sprite());
 		hero.draw_bullet(time, map, window, golems);
-		for (int i = 0; i < golems.size(); i++) {
+		for (size_t i = 0; i < golems.size(); i++) {
 			if (!golems[i]->get_life()) {
 				golems.erase(golems.begin() + i); i--;
 				if (golems.empty() && !bossSpawned) {
@@ -122,7 +122,7 @@ int main()
 			text.setPosition(440, 20);
 			if (hero.ammo() == 0) window.draw(text);
 		}
-		for (int i = 0; i < golems.size(); i++) {
+		for (size_t i = 0; i < golems.size(); i++) {
 			window.draw(golems[i]->get_sprite());
 		}
 
