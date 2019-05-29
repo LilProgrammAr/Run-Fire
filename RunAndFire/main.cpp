@@ -8,7 +8,7 @@
 
 using namespace sf;
 
-bool bossSpawned;
+bool gameOn;
 
 int main()
 {
