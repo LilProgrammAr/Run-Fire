@@ -6,20 +6,31 @@ Map::Map(Image & image, int H, int W) : tittle(H, std::vector<char>(W, 0)) {
 	h = H;
 	w = W;
 
+	//auto start = std::chrono::high_resolution_clock::now();
 	std::ifstream fin("maps/map1.txt");
 	for (int i = 0; i < h; i++) {
+		std::string line;
+		std::getline(fin, line);
 		for (int j = 0; j < w; j++) {
-			fin >> tittle[i][j];
+			tittle[i][j] = line[j];
+			//fin >> tittle[i][j];
 		}
 	}
 
 	std::cout << h << " " << w << std::endl;
+	std::string str;
 	for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
-			std::cout << tittle[i][j];
+			str.push_back(tittle[i][j]);
+			//std::cout << tittle[i][j];
 		}
-		std::cout << std::endl;
+		//std::cout << std::endl;
+		str.push_back('\n');
 	}
+	std::cout << str;
+
+	//auto finish = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+	//std::cout << "map loaded in " << finish.count() << " ms" << std::endl;
 	fin.close();
 }
 

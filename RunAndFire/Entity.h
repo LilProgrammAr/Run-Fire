@@ -26,12 +26,13 @@ public:
 	int ammo();
 private:
 	std::vector<Bullet> bul;
+	std::vector<std::pair<Point, std::chrono::high_resolution_clock::time_point>> crates;
 	int health, bullets_quantity;
-	enum { right, left, up, down, jump, stay } state;
+	State state;
 	float x, y;//координаты игрока х и у
 	float dx, dy, speed , static_speed, static_jump, static_g;//скорость персонажа в текущий момент относительно осей, и стандартная скорость персонажа
 	int w, h;//размеры спрайта и кол-во здоровья персонажа
-	bool life, onGround, is_right, space_pressed, sprite_right, with_mob;
+	bool life, onGround, is_right, space_pressed, sprite_right, with_mob, up_pressed, up_pressed_second_time;
 	Texture texture;
 	Sprite sprite;
 	String name;

@@ -2,6 +2,7 @@
 using namespace sf;
 
 Golem::Golem(Image &image, float X, float Y, int W, int H, String Name) : Monster(image, X, Y, W, H, Name) {
+	type = Monsters::golem;
 	sprite.setTextureRect(IntRect(130, 3, w, h));
 	dx = -dx;
 	is_right = 0;
@@ -39,7 +40,9 @@ void Golem::check_collision(float dx, float dy, Map & map) {
 	try
 	{
 		for (int i = static_cast<int>(y / TITLE_SIZE); i < (y + h) / TITLE_SIZE; i++) {
+			if (i < 0 || i >= map.get_h()) continue;
 			for (int j = static_cast<int>(x / TITLE_SIZE); j < (x + w) / TITLE_SIZE; j++) {
+				if (j < 0 || j >= map.get_w()) continue;
 				if (map[i][j] == 'w')
 				{
 					if (dy > 0)

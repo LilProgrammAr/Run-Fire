@@ -11,9 +11,7 @@ Loot::Loot(Image & image) {
 }
 
 void Loot::ammo_add(float x, float y) {
-	Point temp;
-	temp.x = x; temp.y = y;
-	ammos.push_back(temp);
+	ammos.emplace_back(x, y);
 }
 
 

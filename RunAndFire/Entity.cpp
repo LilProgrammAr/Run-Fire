@@ -2,9 +2,9 @@
 #include "functions.h"
 using namespace sf;
 
-Entity::Entity(Image &image, float X, float Y, int W, int H, String Name) : doubleJump(false) {
+Entity::Entity(Image &image, float X, float Y, int W, int H, String Name) : doubleJump(false), up_pressed(false), up_pressed_second_time(false) {
 	clock.restart();
-	x = X; y = Y; w = W; h = H; name = Name; bullets_quantity = 3;	
+	x = X; y = Y; w = W; h = H; name = Name; bullets_quantity = PLAYET_BULLETS;
 	speed = 0; health = PLAYER_HP ; dx = 0; dy = 0; static_speed = 0.2f; static_jump = 0.6f; static_g = 0.0015f;
 	life = true; onGround = false; space_pressed = false; sprite_right = true; with_mob = false;
 	is_right = true;
@@ -31,8 +31,8 @@ void Entity::Restart() {
 		y = 0;
 		dx = 0;
 		dy = 0;
-		health = 100;
-		bullets_quantity = 3;
+		health = PLAYER_HP;
+		bullets_quantity = PLAYET_BULLETS;
 		if (!life) if (is_right) sprite.rotate(-90);
 				   else sprite.rotate(90);
 		life = true;
@@ -47,16 +47,21 @@ void Entity::control() {
 	//34 47
 	if (!with_mob) {//если нажата клавиша
 		if (Keyboard::isKeyPressed(Keyboard::Left)) {//лево
-			state = left; speed = static_speed; is_right = false;
+			state = State::left; speed = static_speed; is_right = false;
 		}
 		if (Keyboard::isKeyPressed(Keyboard::Right)) {//право
-			state = right; speed = static_speed; is_right = true;
+			state = State::right; speed = static_speed; is_right = true;
+		}
+		if (Keyboard::isKeyPressed(Keyboard::Up) && !up_pressed && !up_pressed_second_time && !onGround)
+		{
+			up_pressed_second_time = true;
+			up_pressed = true;
 		}
 		if ((Keyboard::isKeyPressed(Keyboard::Up)) && (onGround || doubleJump)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
-			state = jump; dy = -static_jump; onGround = false; doubleJump = false;
+			state = State::jump; dy = -static_jump; onGround = false; doubleJump = false; up_pressed = true;
 		}
 		if (Keyboard::isKeyPressed(Keyboard::Down)) {
-			state = down;
+			state = State::down;
 		}
 		if (Keyboard::isKeyPressed(Keyboard::Space) && !space_pressed) {
 			if (bullets_quantity > 0) { fire(); }
@@ -67,9 +72,14 @@ void Entity::control() {
 		if (!Keyboard::isKeyPressed(Keyboard::Space) && space_pressed) {
 			space_pressed = false;
 		}
+		if (!Keyboard::isKeyPressed(Keyboard::Up) && up_pressed)
+		{
+			up_pressed = false;
+			//up_pressed_second_time = false;  
+		}
 	}
 	else {
-		state = stay;
+		state = State::stay;
 	}
 	Restart();
 }
@@ -80,9 +90,9 @@ void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> &
 		control();
 		switch (state)//различные действия в зависимости от состояния
 		{
-		case right: dx = speed; break;//состояние идти вправо
-		case left: dx = -speed; break;//состояние идти влево	
-		case down: dx = 0; break;
+		case State::right: dx = speed; break;//состояние идти вправо
+		case State::left: dx = -speed; break;//состояние идти влево	
+		case State::down: dx = 0; break;
 			//case stay: dx = 0; dy = 0; break;
 		}
 		if (is_right && !sprite_right || !is_right && sprite_right) {
@@ -106,6 +116,7 @@ void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> &
 			dy = -0.5;
 			//dy = 0;//персонаж не будет подпрыгивать если умирает над врагом
 		}
+		if (onGround) up_pressed_second_time = false;
 	}
 	else if (!onGround) {
 		y += dy*time;
@@ -117,48 +128,55 @@ void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> &
 }
 
 void Entity::check_collision(float dx, float dy, Map & map) {
-	try {
-		for (int i = static_cast<int>(y / TITLE_SIZE); i < (y + h) / TITLE_SIZE; i++) {
-			if (i < 0 || i >= map.get_h()) continue;
-			for (int j = static_cast<int>(x / TITLE_SIZE); j < (x + w) / TITLE_SIZE; j++) {
-				if (j < 0 || j >= map.get_w()) continue;
-				onGround = false;
-				if (map[i][j] == 'w')
-				{
+	for (int i = static_cast<int>(y / TITLE_SIZE); i < (y + h) / TITLE_SIZE; i++) {
+		if (i < 0 || i >= map.get_h()) continue;
+		for (int j = static_cast<int>(x / TITLE_SIZE); j < (x + w) / TITLE_SIZE; j++) {
+			if (j < 0 || j >= map.get_w()) continue;
+			onGround = false;
+			if (map[i][j] == 'w')
+			{
 
-					if (dy > 0)
-					{
-						y = static_cast<float>(i * TITLE_SIZE - h);
-						this->dy = 0;
-						this->dx = 0;
-						onGround = true;
-						with_mob = false;
-						return;
-					}
-					if (dy < 0)
-					{
-						y = static_cast<float>(i * TITLE_SIZE + TITLE_SIZE);
-						this->dy = 0;
-					}
-					if (dx > 0)
-					{
-						x = static_cast<float>(j * TITLE_SIZE - w);
-					}
-					if (dx < 0)
-					{
-						x = static_cast<float>(j * TITLE_SIZE + TITLE_SIZE);
-					}
+				if (dy > 0)
+				{
+					y = static_cast<float>(i * TITLE_SIZE - h);
+					this->dy = 0;
+					this->dx = 0;
+					onGround = true;
+					with_mob = false;
+					return;
 				}
-				if (map[i][j] == 'd') {
-					map[i][j] = '0';
-					bullets_quantity += 2;
-					doubleJump = true;
+				if (dy < 0)
+				{
+					y = static_cast<float>(i * TITLE_SIZE + TITLE_SIZE);
+					this->dy = 0;
 				}
+				if (dx > 0)
+				{
+					x = static_cast<float>(j * TITLE_SIZE - w);
+				}
+				if (dx < 0)
+				{
+					x = static_cast<float>(j * TITLE_SIZE + TITLE_SIZE);
+				}
+			}
+			if (map[i][j] == 'd' && up_pressed_second_time) {
+				map[i][j] = '0';
+				doubleJump = true;
+				up_pressed_second_time = false;
+				crates.push_back(std::make_pair(Point(i, j), std::chrono::high_resolution_clock::now()));
+			}
+			if (map[i][j] == 'h') {
+				map[i][j] = '0';
+				health += MED_KIT_HP_BOOST;
+				if (health > PLAYER_HP) health = PLAYER_HP;
 			}
 		}
 	}
-	catch (std::exception) {
-		return;
+	if (!crates.empty()) {	
+		if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - crates.front().second).count() > CRATES_RESPAWN) {
+			map[crates.front().first.x][crates.front().first.y] = 'd';
+			crates.erase(crates.begin());
+		}
 	}
 }
 
@@ -199,8 +217,18 @@ void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
 
 
 void Entity::fire() {
-	
-	Bullet temp(bullet_texture, sprite_right ? x + w : x, y + h / 3, 13, 10, "piu", is_right);
+
+	int t_x, t_y;
+	if (state == State::down)
+	{
+		t_x = x + w / 2;
+		t_y = y + h;
+	}
+	else {
+		t_x = sprite_right ? x + w : x;
+		t_y = y + h / 3;
+	}
+	Bullet temp(bullet_texture, t_x, t_y, 13, 10, "piu", state, is_right);
 	bullets_quantity--;
 	bul.push_back(temp);
 }
