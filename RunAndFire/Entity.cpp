@@ -2,9 +2,13 @@
 #include "functions.h"
 using namespace sf;
 
-Entity::Entity(Image &image, float X, float Y, int W, int H, String Name) : doubleJump(false), up_pressed(false), up_pressed_second_time(false) {
+Entity::Entity(Image &image, float X, float Y, int W, int H, String Name){
+	doubleJump = false;
+	up_pressed = false;
+	up_pressed_second_time = false;
 	clock.restart();
-	x = X; y = Y; w = W; h = H; name = Name; bullets_quantity = PLAYET_BULLETS;
+	x = X; y = Y; w = W; h = H; name = Name;
+	bullets_quantity = PLAYET_BULLETS;
 	speed = 0; health = PLAYER_HP ; dx = 0; dy = 0; static_speed = 0.2f; static_jump = 0.6f; static_g = 0.0015f;
 	life = true; onGround = false; space_pressed = false; sprite_right = true; with_mob = false;
 	is_right = true;
@@ -19,6 +23,10 @@ Entity::Entity(Image &image, float X, float Y, int W, int H, String Name) : doub
 	Image bullet_Image; bullet_Image.loadFromFile("images/bullets.png");
 	bullet_Image.createMaskFromColor(Color(0, 0, 0));
 	bullet_texture.loadFromImage(bullet_Image);
+	hp_text.setString("HP: ");
+	hp_text.setFont(*font);
+	hp_text.setCharacterSize(FONT_SIZE);
+	hp_text.setPosition(440, 40);
 }
 
 Sprite& Entity::get_sprite() {
@@ -32,6 +40,7 @@ void Entity::Restart() {
 		dx = 0;
 		dy = 0;
 		health = PLAYER_HP;
+		hp_text.setString(HP_TEXT + std::to_string(health));
 		bullets_quantity = PLAYET_BULLETS;
 		if (!life) if (is_right) sprite.rotate(-90);
 				   else sprite.rotate(90);
@@ -169,6 +178,7 @@ void Entity::check_collision(float dx, float dy, Map & map) {
 				map[i][j] = '0';
 				health += MED_KIT_HP_BOOST;
 				if (health > PLAYER_HP) health = PLAYER_HP;
+				hp_text.setString(HP_TEXT + std::to_string(health));
 			}
 		}
 	}
@@ -213,6 +223,7 @@ void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
 
 		}
 	}
+	hp_text.setString(HP_TEXT + std::to_string(health));
 }
 
 
@@ -249,4 +260,10 @@ bool Entity::alive() {
 
 int Entity::ammo() {
 	return bullets_quantity;
+}
+
+void Entity::draw(sf::RenderTarget & target, sf::RenderStates states) const
+{
+	target.draw(sprite, states);
+	target.draw(hp_text, states);
 }

@@ -64,7 +64,7 @@ int main()
 		window.draw(*map);
 		//loot.ammo_draw(window);
 		window.draw(loot);
-		window.draw(hero.get_sprite());
+		window.draw(hero);
 		hero.draw_bullet(time, *map, window, golems);
 		for (size_t i = 0; i < golems.size(); i++) {
 			if (!golems[i]->get_life()) {

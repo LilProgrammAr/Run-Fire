@@ -2,6 +2,7 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 #include "headers_which_you_need.h"
+using namespace std::string_literals;
 
 constexpr auto TITLE_SIZE			= 16;
 constexpr auto PLAYER_GUN_SPEED		= 3; // per second
@@ -15,6 +16,8 @@ constexpr auto MAP_W				= 40;
 constexpr auto PLAYET_BULLETS		= 100;
 constexpr auto MAP_FILE				= "images/map.png";
 constexpr auto FONT_FILE			= "terminal.TTF";
+constexpr auto FONT_SIZE			= 20;
+static const sf::String HP_TEXT			= "HP: ";
 
 using Point = sf::Vector2f;
 enum class LootType { AMMO, HP };
