@@ -111,10 +111,18 @@ int main()
 			text.setPosition(440, 20);
 			if (hero.ammo() == 0) window.draw(text);
 		}
+		Text text("HP: ", *font, 20);//создаем объект текст. закидываем в объект текст строку, шрифт, размер шрифта(в пикселях);//сам объект текст (не строка)
+		text.setFillColor(Color::Black);//покрасили текст в красный. если убрать эту строку, то по умолчанию он белый
+		text.setStyle(sf::Text::Bold /*| sf::Text::Underlined*/);//жирный и подчеркнутый текст. по умолчанию он "худой":)) и не подчеркнутый
+		String str = "HP: ";
+		str.insert(str.getSize(), std::to_string(hero.hp()));
+		text.setString(str);
+		text.setPosition(440, 25);
+		window.draw(text);
 		for (size_t i = 0; i < golems.size(); i++) {
 			window.draw(golems[i]->get_sprite());
 		}
-
+		
 		window.display();
 	}
 	gameOn = false;

@@ -24,6 +24,7 @@ public:
 	void Restart();
 	int ammo();
 	void draw(sf::RenderTarget&, sf::RenderStates) const;
+	int hp();
 private:
 	std::vector<Bullet> bul;
 	std::vector<std::pair<Point, std::chrono::high_resolution_clock::time_point>> crates;

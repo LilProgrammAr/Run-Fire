@@ -23,10 +23,16 @@ Entity::Entity(Image &image, float X, float Y, int W, int H, String Name){
 	Image bullet_Image; bullet_Image.loadFromFile("images/bullets.png");
 	bullet_Image.createMaskFromColor(Color(0, 0, 0));
 	bullet_texture.loadFromImage(bullet_Image);
-	hp_text.setString("HP: ");
-	hp_text.setFont(*font);
-	hp_text.setCharacterSize(FONT_SIZE);
-	hp_text.setPosition(440, 40);
+
+	Text text("HP: ", *font, 20);//создаем объект текст. закидываем в объект текст строку, шрифт, размер шрифта(в пиксел€х);//сам объект текст (не строка)
+	text.setFillColor(Color::Black);//покрасили текст в красный. если убрать эту строку, то по умолчанию он белый
+	text.setStyle(sf::Text::Bold /*| sf::Text::Underlined*/);//жирный и подчеркнутый текст. по умолчанию он "худой":)) и не подчеркнутый
+	String str = HP_TEXT;
+	str.insert(str.getSize(), std::to_string(health));
+	text.setString(str);
+	text.setPosition(440, 30);
+	hp_text = text;
+	
 }
 
 Sprite& Entity::get_sprite() {
@@ -40,7 +46,7 @@ void Entity::Restart() {
 		dx = 0;
 		dy = 0;
 		health = PLAYER_HP;
-		hp_text.setString(HP_TEXT + std::to_string(health));
+		//hp_text.setString(HP_TEXT + std::to_string(health));
 		bullets_quantity = PLAYET_BULLETS;
 		if (!life) if (is_right) sprite.rotate(-90);
 				   else sprite.rotate(90);
@@ -54,6 +60,7 @@ void Entity::control() {
 	//467 53
 	//493 100
 	//34 47
+	if (!life) health = 0;
 	if (!with_mob) {//если нажата клавиша
 		if (Keyboard::isKeyPressed(Keyboard::Left)) {//лево
 			state = State::left; speed = static_speed; is_right = false;
@@ -120,6 +127,7 @@ void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> &
 		dy = dy + static_g*time;//посто€нно прит€гиваемс€ к земле
 		if (health <= 0 || y > 500) {
 			life = false;
+			health = 0;
 			if (is_right) sprite.rotate(90);
 			else sprite.rotate(-90);
 			dy = -0.5;
@@ -178,7 +186,7 @@ void Entity::check_collision(float dx, float dy, Map & map) {
 				map[i][j] = '0';
 				health += MED_KIT_HP_BOOST;
 				if (health > PLAYER_HP) health = PLAYER_HP;
-				hp_text.setString(HP_TEXT + std::to_string(health));
+				//hp_text.setString(HP_TEXT + std::to_string(health));
 			}
 		}
 	}
@@ -209,6 +217,7 @@ void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
 			square_in_square(gx, gy, gw, gh, x, y, static_cast<float>(w), static_cast<float>(h))) {
 
 			if (!with_mob) health -= golems[i]->get_damage();
+			if (health < 0) health = 0;
 			if (golems[i]->get_right() && !this->is_right || !golems[i]->get_right() && this->is_right) golems[i]->change_direction();
 			with_mob = true;
 
@@ -223,7 +232,7 @@ void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
 
 		}
 	}
-	hp_text.setString(HP_TEXT + std::to_string(health));
+	//hp_text.setString(HP_TEXT + std::to_string(health));
 }
 
 
@@ -265,5 +274,8 @@ int Entity::ammo() {
 void Entity::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
 	target.draw(sprite, states);
-	target.draw(hp_text, states);
+}
+
+int Entity::hp() {
+	return health;
 }
