@@ -1,26 +1,53 @@
 #include "Bullet.h"
 using namespace sf;
 
-Bullet::Bullet(Texture & texture, float X, float Y, int W, int H, String Name, State state, bool is_right) {
+Bullet::Bullet(Texture & texture, float X, float Y, int W, int H, String Name, Directions dir) {
 	x = X; y = Y; w = W; h = H; name = Name; damage = 25;
-	if (state == State::down)
+	switch (dir)
 	{
+	case Directions::u:
+		dy = -0.4f;
+		dx = 0.f;
+		sprite.rotate(-90.f);
+		break;
+	case Directions::d:
 		dy = 0.4f;
 		dx = 0.f;
 		sprite.rotate(90.f);
-	}
-	else if (is_right)
-	{
+		break;
+	case Directions::l:
 		dy = 0.f;
-		dx = 0.2f;
-	}
-	else
-	{
-		dy = 0.f;
-		dx = -0.2f;
+		dx = -0.4f;
 		sprite.setScale(-1.f, 1.f);
+		break;
+	case Directions::r:
+		dy = 0.f;
+		dx = 0.4f;
+		break;
+	case Directions::ur:
+		dy = -0.4f;
+		dx = 0.4f;
+		sprite.rotate(-45.f);
+		break;
+	case Directions::ul:
+		dy = -0.4f;
+		dx = -0.4f;
+		sprite.setScale(-1.f, 1.f);
+		sprite.rotate(45.f);
+		break;
+	case Directions::dr:
+		dy = 0.4f;
+		dx = 0.4f;
+		sprite.rotate(-45.f);
+		break;
+	case Directions::dl:
+		dy = 0.4f;
+		dx = -0.4f;
+		sprite.setScale(-1.f, 1.f);
+		sprite.rotate(45.f);
+		break;
 	}
-	speed = 0.2f;
+	speed = 0.4f;
 	onGround = false;
 	sprite.setTexture(texture);
 	sprite.setTextureRect(IntRect(280, 215, w, h));

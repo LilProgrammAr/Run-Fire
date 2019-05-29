@@ -8,8 +8,11 @@
 
 using namespace sf;
 
+bool bossSpawned;
+
 int main()
 {
+	bossSpawned = false;
 	gameOn = true;
 	RenderWindow window(VideoMode(640, 480), "Run and Fire!");
 	View view; view.reset(FloatRect(0, 0, 640, 480));
@@ -37,7 +40,6 @@ int main()
 	loot.ammo_add(576, 416);
 	loot.ammo_add(500, 416);
 
-	bool bossSpawned = false;
 	while (window.isOpen())
 	{
 
@@ -76,6 +78,7 @@ int main()
 				}
 			}
 		}
+		std::cout << bossSpawned << std::endl;
 		if (golems.size() == 0) {
 			Text text("YOU WIN!", *font, 20);//создаем объект текст. закидываем в объект текст строку, шрифт, размер шрифта(в пикселях);//сам объект текст (не строка)
 			text.setFillColor(Color::Black);//покрасили текст в красный. если убрать эту строку, то по умолчанию он белый

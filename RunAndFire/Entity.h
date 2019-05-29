@@ -21,7 +21,7 @@ public:
 	void fire();
 	void draw_bullet(float time, Map & map, RenderWindow & window, std::vector<std::unique_ptr<Golem>> & golems);
 	bool alive();
-	void Restart();
+	void Restart(Map &, std::vector<std::unique_ptr<Golem>> &, Loot & loot);
 	int ammo();
 	void draw(sf::RenderTarget&, sf::RenderStates) const;
 	int hp();
@@ -30,6 +30,7 @@ private:
 	std::vector<std::pair<Point, std::chrono::high_resolution_clock::time_point>> crates;
 	int health, bullets_quantity;
 	State state;
+	Directions dir;
 	float x, y;//координаты игрока х и у
 	float dx, dy, speed , static_speed, static_jump, static_g;//скорость персонажа в текущий момент относительно осей, и стандартная скорость персонажа
 	int w, h;//размеры спрайта и кол-во здоровья персонажа

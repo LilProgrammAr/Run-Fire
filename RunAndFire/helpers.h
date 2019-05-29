@@ -23,7 +23,8 @@ using Point = sf::Vector2f;
 enum class LootType { AMMO, HP };
 enum class State { right, left, up, down, jump, stay };
 enum class Monsters { none, golem, bossGolem };
+enum class Directions { u, d, l, r, ur, ul, dr, dl };
 
-static bool gameOn = true;
-
+extern bool gameOn;
+extern bool bossSpawned;
 #endif //HELPERS_H
