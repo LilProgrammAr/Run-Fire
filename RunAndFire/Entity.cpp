@@ -3,15 +3,19 @@
 using namespace sf;
 
 bool bossSpawned;
+bool isLevelPassed;
+size_t level_counter = 1;
 
 Entity::Entity(Image &image, float X, float Y, int W, int H, String Name){
+	isLevelPassed = false;
 	doubleJump = false;
 	up_pressed = false;
+	isFly = false;
 	up_pressed_second_time = false;
 	clock.restart();
 	x = X; y = Y; w = W; h = H; name = Name;
 	bullets_quantity = PLAYET_BULLETS;
-	speed = 0; health = PLAYER_HP ; dx = 0; dy = 0; static_speed = 0.2f; static_jump = 0.6f; static_g = 0.0015f;
+	speed = 0; health = PLAYER_HP ; dx = 0; dy = 0; static_speed = 0.2f; static_jump = 0.6f;
 	life = true; onGround = false; space_pressed = false; sprite_right = true; with_mob = false;
 	is_right = true;
 	texture.loadFromImage(image);
@@ -39,14 +43,17 @@ Sprite& Entity::get_sprite() {
 	return sprite;
 }
 
-void Entity::Restart(Map & map, std::vector<std::unique_ptr<Golem>> & golems, Loot & loot) {
-	if (Keyboard::isKeyPressed(Keyboard::R)) {
+void Entity::Restart(Map & map, std::vector<std::unique_ptr<Golem>> & golems, std::vector<std::unique_ptr<Ghost>> & ghosts, Loot & loot) {
+		isLevelPassed = false;
 		bossSpawned = false;
-		x = -13;
-		y = 0;
+		isFly = false;
+		spawn(map);
+		map.reset();
+		bul.clear();
 		dx = 0;
 		dy = 0;
 		health = PLAYER_HP;
+		state = State::stay;
 		//hp_text.setString(HP_TEXT + std::to_string(health));
 		bullets_quantity = PLAYET_BULLETS;
 		if (!life) if (is_right) sprite.rotate(-90);
@@ -54,15 +61,12 @@ void Entity::Restart(Map & map, std::vector<std::unique_ptr<Golem>> & golems, Lo
 		life = true;
 		loot.clear();
 		golems.clear();
-		loot.ammo_add(96, 320);
-		loot.ammo_add(576, 416);
-		loot.ammo_add(500, 416);
+		ghosts.clear();
 		Image monster_Image; monster_Image.loadFromFile("images/Monster.png");
 		monster_Image.createMaskFromColor(Color(255, 255, 255));
-		golems.push_back(std::make_unique<Golem>(monster_Image, 64.f, 170.f, 28, 34, "Golem1"));
-		golems.push_back(std::make_unique<Golem>(monster_Image, 150.f, 332.f, 28, 34, "Golem2"));
-		
-	}
+		golems_spawn(monster_Image, 28, 34, golems, map);
+		ghosts_spawn(monster_Image, 23, 28, ghosts, map);
+		loot_spawn(loot, map);
 }
 
 //функция управления персонажем
@@ -77,21 +81,19 @@ void Entity::control() {
 		if (Keyboard::isKeyPressed(Keyboard::D)) {//право
 			state = State::right; speed = static_speed; is_right = true;
 		}
-		if (Keyboard::isKeyPressed(Keyboard::Space) && !up_pressed && !up_pressed_second_time && !onGround)
+		if ((Keyboard::isKeyPressed(Keyboard::Space) || Keyboard::isKeyPressed(Keyboard::W)) && !up_pressed && !up_pressed_second_time && !onGround)
 		{
 			up_pressed_second_time = true;
 			up_pressed = true;
 		}
-		if ((Keyboard::isKeyPressed(Keyboard::Space)) && (onGround || doubleJump)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
+		if ((Keyboard::isKeyPressed(Keyboard::Space) || Keyboard::isKeyPressed(Keyboard::W)) && (onGround || doubleJump)) {//если нажата клавиша вверх и мы на земле, то можем прыгать
 			state = State::jump; dy = -static_jump; onGround = false; doubleJump = false; up_pressed = true;
+			isFly = false;
 		}
-		if (Keyboard::isKeyPressed(Keyboard::S)) {
+		if (Keyboard::isKeyPressed(Keyboard::S) && (onGround || doubleJump)) {
 			state = State::down;
 		}
-		if (Keyboard::isKeyPressed(Keyboard::W)) {
-			state = State::up;
-		}
-		if (!Keyboard::isKeyPressed(Keyboard::Space) && up_pressed)
+		if ((!Keyboard::isKeyPressed(Keyboard::Space) && !Keyboard::isKeyPressed(Keyboard::W)) && up_pressed)
 		{
 			up_pressed = false;
 			//up_pressed_second_time = false;  
@@ -147,10 +149,16 @@ void Entity::control() {
 	//Restart();
 }
 
-void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> & golems, Loot & loot) {
-	Restart(map, golems, loot);
+void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> & golems, std::vector<std::unique_ptr<Ghost>> & ghosts, Loot & loot) {
+	//std::cout << isFly << std::endl;
+	if (Keyboard::isKeyPressed(Keyboard::R))
+		Restart(map, golems, ghosts, loot);
+		loot.update(map);
 	if (life) {
+		madeDoubleJumpOnThisTurn = up_pressed_second_time;
 		control();
+		if (madeDoubleJumpOnThisTurn != up_pressed_second_time) madeDoubleJumpOnThisTurn = true; else madeDoubleJumpOnThisTurn = false;
+		//madeDoubleJumpOnThisTurn = true;
 		switch (state)//различные действия в зависимости от состояния
 		{
 		case State::right: dx = speed; break;//состояние идти вправо
@@ -166,12 +174,14 @@ void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> &
 		y += dy*time;
 		check_collision(0, dy, map);
 
-		check_collision(golems);
+		check_collision(golems, ghosts);
 		check_collision(loot);
 
 		sprite.setPosition(x + w / 2, y + h / 2); //задаем позицию спрайта в место его центра
 		speed = 0;
-		dy = dy + static_g*time;//постоянно притягиваемся к земле
+		if (dy > 0 && !isFly) isFly = true;
+		dy = dy + STATIC_G*time;//постоянно притягиваемся к земле
+		
 		if (health <= 0 || y > 500) {
 			life = false;
 			health = 0;
@@ -187,7 +197,8 @@ void Entity::update(float time, Map & map, std::vector<std::unique_ptr<Golem>> &
 		//std::cout << dy << std::endl;
 		check_collision(0, dy, map);
 		sprite.setPosition(x + w / 2, y + h / 2);
-		dy = dy + static_g*time;
+		dy = dy + STATIC_G*time;
+		isFly = true;
 	}
 }
 
@@ -197,7 +208,7 @@ void Entity::check_collision(float dx, float dy, Map & map) {
 		for (int j = static_cast<int>(x / TITLE_SIZE); j < (x + w) / TITLE_SIZE; j++) {
 			if (j < 0 || j >= map.get_w()) continue;
 			onGround = false;
-			if (map[i][j] == 'w')
+			if (map[i][j] == 'w' || map[i][j] == 'v' && !map.isInter())
 			{
 
 				if (dy > 0)
@@ -207,6 +218,8 @@ void Entity::check_collision(float dx, float dy, Map & map) {
 					this->dx = 0;
 					onGround = true;
 					with_mob = false;
+					state = State::stay;
+					isFly = false;
 					return;
 				}
 				if (dy < 0)
@@ -223,17 +236,59 @@ void Entity::check_collision(float dx, float dy, Map & map) {
 					x = static_cast<float>(j * TITLE_SIZE + TITLE_SIZE);
 				}
 			}
-			if (map[i][j] == 'd' && up_pressed_second_time) {
-				map[i][j] = '0';
-				doubleJump = true;
-				up_pressed_second_time = false;
-				crates.push_back(std::make_pair(Point(i, j), std::chrono::high_resolution_clock::now()));
+			if (life)
+			{
+				/*
+				if (map[i][j] == 'd' && up_pressed_second_time && madeDoubleJumpOnThisTurn) {
+					map[i][j] = '0';
+					doubleJump = true;
+					up_pressed_second_time = false;
+					isFly = false;
+					crates.push_back(std::make_pair(Point(i, j), std::chrono::high_resolution_clock::now()));
+					//!!!!
+					if (j == 2 && level_counter == 1) map.move();
+				}
+				*/
+				if (map[i][j] == 'h') {
+					map[i][j] = '0';
+					health += MED_KIT_HP_BOOST;
+					if (health > PLAYER_HP) health = PLAYER_HP;
+					//hp_text.setString(HP_TEXT + std::to_string(health));
+				}
+
 			}
-			if (map[i][j] == 'h') {
-				map[i][j] = '0';
-				health += MED_KIT_HP_BOOST;
-				if (health > PLAYER_HP) health = PLAYER_HP;
-				//hp_text.setString(HP_TEXT + std::to_string(health));
+		}
+	}
+	for (int i = static_cast<int>((y + 8) / TITLE_SIZE); i < (y + h - 8) / TITLE_SIZE; i++) {
+		if (i < 0 || i >= map.get_h()) continue;
+		for (int j = static_cast<int>((x + 8) / TITLE_SIZE); j < (x + w - 8) / TITLE_SIZE; j++) {
+			if (j < 0 || j >= map.get_w()) continue;
+			if (life)
+			{
+				if (map[i][j] == 's') {
+					//life = false;
+					health -= 100;
+					if (health < 0) health = 0;
+					dy = -static_jump / 4.f;
+				}
+			}
+		}
+	}
+	for (int i = static_cast<int>((y - 17) / TITLE_SIZE); i < (y + h + 17) / TITLE_SIZE; i++) {
+		if (i < 0 || i >= map.get_h()) continue;
+		for (int j = static_cast<int>((x - 17) / TITLE_SIZE); j < (x + w + 17) / TITLE_SIZE; j++) {
+			if (j < 0 || j >= map.get_w()) continue;
+			if (life)
+			{
+				if (map[i][j] == 'd' && up_pressed_second_time && madeDoubleJumpOnThisTurn) {
+					map[i][j] = '0';
+					doubleJump = true;
+					up_pressed_second_time = false;
+					isFly = false;
+					crates.push_back(std::make_pair(Point(i, j), std::chrono::high_resolution_clock::now()));
+					//!!!!
+					if (j == 2 && level_counter == 1) map.move();
+				}
 			}
 		}
 	}
@@ -255,13 +310,23 @@ void Entity::check_collision(Loot & loot) {
 			loot.ammos.erase(loot.ammos.begin() + i); i--;
 		}
 	}
+	for (size_t i = 0; i < loot.portals.size(); i++) {
+		float gx = loot.portals[i].x, gy = loot.portals[i].y, gh = loot.get_rect().height, gw = loot.get_rect().width;
+		if (!isLevelPassed)
+			if (square_in_square(x, y, static_cast<float>(w), static_cast<float>(h), gx, gy, gw, gh) ||
+				square_in_square(gx, gy, gw, gh, x, y, static_cast<float>(w), static_cast<float>(h))) {
+				level_counter++;
+				std::cout << level_counter << std::endl;
+				isLevelPassed = true;
+			}
+	}
 }
 
-void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
+void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems, std::vector<std::unique_ptr<Ghost>> & ghosts) {
 	for (size_t i = 0; i < golems.size(); i++) {
 		float gx = golems[i]->get_x(), gy = golems[i]->get_y(), gh = static_cast<float>(golems[i]->get_h()), gw = static_cast<float>(golems[i]->get_w());
-		if (square_in_square(x, y, static_cast<float>(w), static_cast<float>(h), gx, gy, gw, gh) ||
-			square_in_square(gx, gy, gw, gh, x, y, static_cast<float>(w), static_cast<float>(h))) {
+		if (square_in_square(x + 2, y + 2, static_cast<float>(w) - 4, static_cast<float>(h) - 4, gx, gy, gw, gh) ||
+			square_in_square(gx, gy, gw, gh, x + 2, y + 2, static_cast<float>(w) - 4, static_cast<float>(h) - 4)) {
 
 			if (!with_mob) health -= golems[i]->get_damage();
 			if (health < 0) health = 0;
@@ -278,6 +343,21 @@ void Entity::check_collision(std::vector<std::unique_ptr<Golem>> & golems) {
 			}
 
 		}
+	}
+	for (size_t i = 0; i < ghosts.size(); i++) {
+		float gx = ghosts[i]->get_x(), gy = ghosts[i]->get_y(), gh = static_cast<float>(ghosts[i]->get_h()), gw = static_cast<float>(ghosts[i]->get_w());
+		if (isFly)
+			if (square_in_square(x + w/4, y + h, static_cast<float>(w) / 2, 1, gx, gy, gw, 8) ||
+				square_in_square(gx, gy, gw, 8, x + w / 4, y + h, static_cast<float>(w) / 2, 1)) {
+
+				ghosts[i]->damaged();
+				if (health < 0) health = 0;
+				//with_mob = true;
+				dy = -static_jump;
+
+			}
+		if (ghosts[i]->checkBullets(x, y, w, h)) health -= ghosts[i]->get_damage();
+		if (health < 0) health = 0;
 	}
 	//hp_text.setString(HP_TEXT + std::to_string(health));
 }
@@ -326,10 +406,10 @@ void Entity::fire() {
 	bul.push_back(temp);
 }
 
-void Entity::draw_bullet(float time, Map & map, RenderWindow & window, std::vector<std::unique_ptr<Golem>> & golems) {
+void Entity::draw_bullet(float time, Map & map, RenderWindow & window, std::vector<std::unique_ptr<Golem>> & golems, std::vector<std::unique_ptr<Ghost>> & ghosts) {
 	for (size_t i = 0; i < bul.size(); i++) {
 		window.draw(bul[i].get_sprite());
-		int temp = bul[i].update(time, map, golems);
+		int temp = bul[i].update(time, map, golems, ghosts);
 		if (temp == -1) { 
    			bul.erase(bul.begin() + i); i--; }
 		if (bul.size() == 0) return;
@@ -351,4 +431,25 @@ void Entity::draw(sf::RenderTarget & target, sf::RenderStates states) const
 
 int Entity::hp() {
 	return health;
+}
+void Entity::spawn(Map & map)
+{
+	for (int i = 0; i < map.get_h(); i++) {
+		for (int j = 0; j < map.get_w(); j++) {
+			if (map[i][j] == 'b')
+			{
+				x = j * TITLE_SIZE;
+				y = i * TITLE_SIZE;
+			}
+		}
+	}
+}
+
+float Entity::getX()
+{
+	return x;
+}
+float Entity::getY()
+{
+	return y;
 }

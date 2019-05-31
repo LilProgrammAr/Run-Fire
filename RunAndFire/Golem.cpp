@@ -25,7 +25,20 @@ void Golem::set(Image &image, float X, float Y, int W, int H, String Name){
 void Golem::update(float time, Map & map)
 {
 
-	x += dx*time;
+	switch (health)
+	{
+	case 50:	
+		x += dx*time;
+		break;
+	case 25:
+		sprite.setTextureRect(IntRect(133, 84, w, h));
+		x += 2 * dx*time;
+		break;
+	default:	
+		x += dx*time;
+		break;
+
+	}
 	check_collision(dx, 0, map);
 	y += dy*time;
 	check_collision(0, dy, map);
@@ -43,7 +56,7 @@ void Golem::check_collision(float dx, float dy, Map & map) {
 			if (i < 0 || i >= map.get_h()) continue;
 			for (int j = static_cast<int>(x / TITLE_SIZE); j < (x + w) / TITLE_SIZE; j++) {
 				if (j < 0 || j >= map.get_w()) continue;
-				if (map[i][j] == 'w')
+				if (map[i][j] == 'w' || map[i][j] == 'v' && !map.isInter())
 				{
 					if (dy > 0)
 					{
@@ -55,6 +68,19 @@ void Golem::check_collision(float dx, float dy, Map & map) {
 					{
 						y = static_cast<float>(i * TITLE_SIZE + TITLE_SIZE);
 					}
+					if (dx > 0)
+					{
+						x = static_cast<float>(j * TITLE_SIZE - w);
+						change_direction();
+					}
+					if (dx < 0)
+					{
+						x = static_cast<float>(j * TITLE_SIZE + TITLE_SIZE);
+						change_direction();
+					}
+				}
+				if (map[i][j] == 's')
+				{
 					if (dx > 0)
 					{
 						x = static_cast<float>(j * TITLE_SIZE - w);
@@ -83,4 +109,17 @@ void Golem::change_direction() {
 
 bool Golem::get_right() {
 	return is_right;
+}
+void golems_spawn(Image &image, int W, int H, std::vector<std::unique_ptr<Golem>> & golems, Map & map)
+{
+	golems.clear();
+	for (int i = 0; i < map.get_h(); i++) {
+		for (int j = 0; j < map.get_w(); j++) {
+			if (map[i][j] == 'p')
+			{
+				golems.push_back(std::make_unique<Golem>(image, j * TITLE_SIZE, (i - 2) * TITLE_SIZE, W, H, "Golem"));
+			}
+		}
+	}
+	//golems.resize(1);
 }
